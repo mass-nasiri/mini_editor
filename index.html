@@ -1,0 +1,77 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Go HTML Editor</title>
+    <!-- Lightweight Monaco Editor CDN -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/editor/editor.main.min.css">
+    <style>
+        body { margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background-color: #1e1e1e; font-family: sans-serif; }
+        #editor-container { width: 50%; height: 100%; }
+        #preview-container { width: 50%; height: 100%; background: #ffffff; border-left: 2px solid #333; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+    <div id="editor-container"></div>
+    <div id="preview-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
+
+        require(['vs/editor/editor.main'], function() {
+            const initialCode = `<!-- HTML -->
+<div class="card">
+    <h1>Hello From Go!</h1>
+    <p id="msg">Sleek, lightweight, and fast real-time preview.</p>
+</div>
+
+<style>
+    /* CSS */
+    body { font-family: 'Segoe UI', system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #eef2f3; }
+    .card { text-align: center; padding: 40px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    h1 { color: #007acc; font-weight: 600; }
+</style>
+
+<script>
+    // JavaScript
+    document.getElementById('msg').innerText += " Built dynamically.";
+<\/script>`;
+
+            window.editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: initialCode,
+                language: 'html',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 14
+            });
+
+            function updatePreview() {
+                const code = window.editor.getValue();
+                const container = document.getElementById('preview-container');
+                
+                // Completely recreate the iframe to force correct memory and script execution
+                container.innerHTML = '';
+                const iframe = document.createElement('iframe');
+                container.appendChild(iframe);
+                
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(code);
+                doc.close();
+            }
+
+            window.editor.onDidChangeModelContent(() => {
+                updatePreview();
+            });
+
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
