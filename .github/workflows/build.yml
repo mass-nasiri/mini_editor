@@ -1,5 +1,5 @@
 # .github/workflows/build.yml
-name: Build and Release Go Editor
+name: Build Compact Frameless Editor
 
 on: 
   push:
@@ -22,35 +22,17 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Install Windows Resource Compiler
-        run: go install github.com/tc-hib/go-winres@latest
-
-      - name: Initialize and Embed Metadata Automatically
+      - name: Initialize Module and Build Precision Binary
         run: |
-          go mod init mini_html_editor
-          go get github.com/webview/webview_go
           go mod tidy
-          
-          # 1. Let the tool generate a perfect standard windows resource structure
-          go-winres init
-          
-          # 2. Safely swap the default icon with your custom app.ico if it exists
-          if (Test-Path "app.ico") {
-              Copy-Item "app.ico" "winres/icon.ico" -Force
-          }
-          
-          # 3. Compile the embedded syso structure flawlessly
-          go-winres make
-
-      - name: Compile Lightweight Signed-Like Binary
-        run: go build -ldflags="-H windowsgui -s -w" -o mini_editor.exe main.go
+          go build -ldflags="-H windowsgui -s -w" -o mini_editor.exe main.go
 
       - name: Deploy to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "Latest Production Build"
-          body: "Fully Offline and Multi-tabbed ArchFlow Engine compiled with automated system metadata blocks."
+          name: "Production Frameless Release"
+          body: "Ultra-lightweight borderless local workspace manager engine with dynamic split preview."
           draft: false
           prerelease: false
           files: mini_editor.exe
