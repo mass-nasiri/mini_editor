@@ -3,7 +3,6 @@ package main
 
 import (
 	_ "embed"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -35,14 +34,7 @@ const (
 	SWP_NOZORDER     = 0x0004
 )
 
-type FilePayload struct {
-	Name    string
-	Path    string
-	Content string
-}
-
 func removeWindowFrame(hwnd uintptr) {
-	// Traverses upwards to fetch the master window engine handle
 	parent, _, _ := procGetParent.Call(hwnd)
 	for parent != 0 {
 		hwnd = parent
@@ -51,7 +43,6 @@ func removeWindowFrame(hwnd uintptr) {
 
 	style, _, _ := procGetWindowLong.Call(hwnd, uintptr(GWL_STYLE))
 	if style != 0 {
-		// Strip borders, titlebar and generic window decoration styles
 		newStyle := style &^ WS_CAPTION &^ WS_THICKFRAME &^ WS_MINIMIZEBOX &^ WS_MAXIMIZEBOX
 		procSetWindowLong.Call(hwnd, uintptr(GWL_STYLE), newStyle)
 		procSetWindowPos.Call(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED|SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER)
@@ -65,11 +56,7 @@ func main() {
 	w.SetTitle("Local Workspace Engine")
 	w.SetSize(1200, 800, webview.HintNone)
 
-	// Custom native Win32 dialog simulation bridge for file operations
 	w.Bind("nativeOpenDialog", func() string {
-		// Standard file processing fallback for sandboxed environments
-		// In a completely production-grade setup, you can replace this with native file picking libraries
-		// For cross-platform stability, we provide safe access via absolute string mapping
 		return ""
 	})
 
@@ -96,11 +83,10 @@ func main() {
 		w.SetSize(1200, 800, webview.HintMax)
 	})
 
-	// Inject runtime hook to target HWND once initialized
 	go func() {
 		hwnd := w.Window()
-		if hwnd != 0 {
-			removeWindowFrame(hwnd)
+		if hwnd != nil {
+			removeWindowFrame(uintptr(hwnd))
 		}
 	}()
 
