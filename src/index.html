@@ -1,0 +1,111 @@
+<!-- src/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra-Lightweight HTML Editor</title>
+    <!-- Load Monaco Editor from CDN for ultimate lightweight binary size -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/editor/editor.main.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            font-family: sans-serif;
+        }
+        #editor-container {
+            width: 50%;
+            height: 100%;
+        }
+        #preview-container {
+            width: 50%;
+            height: 100%;
+            background: #ffffff;
+            border-left: 2px solid #333;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="editor-container"></div>
+    <div id="preview-container">
+        <iframe id="preview"></iframe>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
+
+        require(['vs/editor/editor.main'], function() {
+            // Initial boilerplate code demonstrating HTML, CSS, JS, and TS syntax
+            const initialCode = `<!-- HTML -->
+<div class="box">
+    <h1>Hello ArchFlow!</h1>
+    <p id="text">Real-time HTML/CSS/JS/TS Editor.</p>
+</div>
+
+<style>
+    /* CSS */
+    body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 80vh; background: #f0f2f5; }
+    .box { text-align: center; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    h1 { color: #007acc; }
+</style>
+
+<script>
+    // TypeScript / JavaScript
+    interface User {
+        name: string;
+        role: string;
+    }
+
+    const user: User = {
+        name: "Developer",
+        role: "Architect"
+    };
+
+    console.log(\`Running as \${user.role}\`);
+    document.getElementById('text').innerText += " - Powered by Rust & Monaco.";
+<\/script>`;
+
+            // Initialize Monaco Editor with HTML/TS combined support
+            window.editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: initialCode,
+                language: 'html',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 14
+            });
+
+            const previewFrame = document.getElementById('preview');
+
+            // Function to update preview in real-time
+            function updatePreview() {
+                const code = window.editor.getValue();
+                
+                // Transpile or clean script tags if needed, or let browser handle standard layouts
+                const mimeType = 'text/html';
+                const blob = new Blob([code], { type: mimeType });
+                previewFrame.src = URL.createObjectURL(blob);
+            }
+
+            // Listen for changes
+            window.editor.onDidChangeModelContent(() => {
+                updatePreview();
+            });
+
+            // Initial trigger
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
