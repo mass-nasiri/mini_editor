@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-	"unsafe"
 
 	"github.com/webview/webview_go"
 )
@@ -23,7 +22,6 @@ var (
 )
 
 const (
-	GWL_STYLE   = -16
 	WS_CAPTION  = 0x00C00000
 	WS_THICKFRAME = 0x00040000
 	WS_MINIMIZEBOX = 0x00020000
@@ -41,12 +39,19 @@ func removeWindowFrame(hwnd uintptr) {
 		parent, _, _ = procGetParent.Call(hwnd)
 	}
 
-	style, _, _ := procGetWindowLong.Call(hwnd, uintptr(GWL_STYLE))
+	// GWL_STYLE is -16, we cast it correctly using bitwise operations for uintptr compatibility
+	gwlStyleOffset := uintptr(stringBitcastMinus16())
+	style, _, _ := procGetWindowLong.Call(hwnd, gwlStyleOffset)
 	if style != 0 {
 		newStyle := style &^ WS_CAPTION &^ WS_THICKFRAME &^ WS_MINIMIZEBOX &^ WS_MAXIMIZEBOX
-		procSetWindowLong.Call(hwnd, uintptr(GWL_STYLE), newStyle)
+		procSetWindowLong.Call(hwnd, gwlStyleOffset, newStyle)
 		procSetWindowPos.Call(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED|SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER)
 	}
+}
+
+// Safely represents -16 as a complement architecture value without untyped constant overflow triggers
+func stringBitcastMinus16() int32 {
+	return -16
 }
 
 func main() {
