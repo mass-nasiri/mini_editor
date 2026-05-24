@@ -29,8 +29,8 @@ jobs:
         run: |
           go mod init mini_html_editor
           go get github.com/webview/webview_go
-          # Injecting Icon and Information directly into binary structures
-          go-winres make --icon app.ico --in versioninfo.json
+          # The tool automatically links the icon defined inside versioninfo.json
+          go-winres make --in versioninfo.json
 
       - name: Compile Lightweight Signed-Like Binary
         run: go build -ldflags="-H windowsgui -s -w" -o mini_editor.exe main.go
