@@ -22,18 +22,25 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Initialize Module and Build
+      - name: Install Windows Resource Compiler
+        run: go install github.com/tc-hib/go-winres@latest
+
+      - name: Initialize Module and Embed Metadata
         run: |
           go mod init mini_html_editor
           go get github.com/webview/webview_go
-          go build -ldflags="-H windowsgui" -o mini_editor.exe main.go
+          # Injecting Icon and Information directly into binary structures
+          go-winres make --icon app.ico --in versioninfo.json
+
+      - name: Compile Lightweight Signed-Like Binary
+        run: go build -ldflags="-H windowsgui -s -w" -o mini_editor.exe main.go
 
       - name: Deploy to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "Latest Production Build"
-          body: "This release contains the automatically compiled lightweight Go HTML/CSS/JS editor."
+          body: "Fully Offline and Multi-tabbed ArchFlow Engine compiled seamlessly."
           draft: false
           prerelease: false
           files: mini_editor.exe
