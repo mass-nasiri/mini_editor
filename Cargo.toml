@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wry = "0.35"
+# Locking the exact compatible version to match the code layout
+wry = "=0.35.0"
