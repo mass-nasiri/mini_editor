@@ -29,7 +29,8 @@ jobs:
         run: |
           go mod init mini_html_editor
           go get github.com/webview/webview_go
-          # The tool automatically links the icon defined inside versioninfo.json
+          go mod tidy
+          # Compiling resources with the corrected nested JSON structure
           go-winres make --in versioninfo.json
 
       - name: Compile Lightweight Signed-Like Binary
@@ -40,7 +41,7 @@ jobs:
         with:
           tag_name: latest
           name: "Latest Production Build"
-          body: "Fully Offline and Multi-tabbed ArchFlow Engine compiled seamlessly."
+          body: "Fully Offline and Multi-tabbed ArchFlow Engine compiled seamlessly with proper manifest headers."
           draft: false
           prerelease: false
           files: mini_editor.exe
