@@ -1,7 +1,14 @@
 # .github/workflows/build.yml
-name: Build Go Editor
+name: Build and Release Go Editor
 
-on: [push, workflow_dispatch]
+on: 
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -21,8 +28,14 @@ jobs:
           go get github.com/webview/webview_go
           go build -ldflags="-H windowsgui" -o mini_editor.exe main.go
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Deploy to GitHub Releases
+        uses: softprops/action-gh-release@v2
         with:
-          name: go-html-editor-windows
-          path: mini_editor.exe
+          tag_name: latest
+          name: "Latest Production Build"
+          body: "This release contains the automatically compiled lightweight Go HTML/CSS/JS editor."
+          draft: false
+          prerelease: false
+          files: mini_editor.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
