@@ -22,17 +22,30 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Initialize Module and Build Precision Binary
+      - name: Install Windows Resource Compiler
+        run: go install github.com/tc-hib/go-winres@latest
+
+      - name: Process App Icon and Embed Assets
         run: |
           go mod tidy
-          go build -ldflags="-H windowsgui -s -w" -o mini_editor.exe main.go
+          # Build empty boilerplate structure
+          go-winres init
+          # If your custom app.ico exists in root, force swap it to be the main binary icon
+          if (Test-Path "app.ico") {
+              Copy-Item "app.ico" "winres/icon.ico" -Force
+          }
+          # Create the native .syso file containing resource properties
+          go-winres make
+
+      - name: Compile Precision Binary with Embedded Resources
+        run: go build -ldflags="-H windowsgui -s -w" -o mini_editor.exe main.go
 
       - name: Deploy to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "Production Frameless Release"
-          body: "Ultra-lightweight borderless local workspace manager engine with dynamic split preview."
+          body: "Ultra-lightweight borderless local workspace manager compiled with high-res icon sheets."
           draft: false
           prerelease: false
           files: mini_editor.exe
