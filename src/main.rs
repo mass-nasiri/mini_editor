@@ -1,13 +1,11 @@
 // src/main.rs
 
-use wry::{
-    application::{
-        event::{Event, StartCause, WindowEvent},
-        event_loop::{ControlFlow, EventLoop},
-        window::WindowBuilder,
-    },
-    webview::WebViewBuilder,
+use tao::{
+    event::{Event, StartCause, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
 };
+use wry::WebViewBuilder;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Include the HTML and editor assets directly inside the binary for speed and portability
@@ -16,14 +14,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Mini HTML/CSS/JS/TS Live Editor")
-        .with_inner_size(wry::application::dpi::LogicalSize::new(1200.0, 800.0))
+        .with_inner_size(tao::dpi::LogicalSize::new(1200.0, 800.0))
         .build(&event_loop)?;
 
-    // Build the webview and load the embedded live editor
-    let _webview = WebViewBuilder::new(window)?
+    // Build the webview using the tao window instance and load the embedded live editor
+    let _webview = WebViewBuilder::new(&window)
         .with_html(html_content)?
         .build()?;
 
+    // Correctly return the event loop execution to satisfy the Result logic
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -35,5 +34,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } => *control_flow = ControlFlow::Exit,
             _ => (),
         }
-    }); // Crucial: Removed the trailing semicolon or matched the block returns correctly
+    });
 }
