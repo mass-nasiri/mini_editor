@@ -4,87 +4,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sleek Offline Editor</title>
+    <title>Sleek Live Workspace</title>
     <style>
-        :root { --bg: #121212; --panel: #1a1a1a; --text: #e0e0e0; --accent: #007acc; --border: #2d2d2d; }
+        :root { --bg: #121212; --panel: #1a1a1a; --text: #e0e0e0; --accent: #2d2d2d; --active: #1e1e1e; --border: #252525; }
+        * { box-sizing: border-box; user-select: none; }
         body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
         
-        /* Top Navigation Header */
-        header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border-bottom: 1px solid var(--border); padding: 0 15px; height: 45px; }
-        .brand { font-weight: 600; font-size: 14px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-        .about-btn { background: transparent; border: 1px solid var(--border); color: #888; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .about-btn:hover { color: #fff; border-color: #555; }
+        .top-bar { display: flex; background: var(--panel); height: 35px; border-bottom: 1px solid var(--border); align-items: center; justify-content: space-between; position: relative; }
+        .left-controls { display: flex; align-items: center; height: 100%; flex: 1; overflow: hidden; }
+        
+        .menu-btn { background: transparent; border: none; color: #aaa; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .menu-btn:hover { background: #252525; color: #fff; }
+        .dropdown { display: none; position: absolute; top: 35px; left: 0; background: var(--panel); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); z-index: 1000; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+        .dropdown button { background: transparent; border: none; color: var(--text); width: 100%; padding: 12px 20px; text-align: left; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; }
+        .dropdown button:hover { background: #252525; color: #fff; }
+        .shortcut-hint { color: #555; font-family: monospace; font-size: 11px; margin-left: 20px; }
 
-        /* Tabs Bar */
-        .tabs-container { display: flex; background: #151515; border-bottom: 1px solid var(--border); height: 35px; align-items: flex-end; padding-left: 10px; }
-        .tab { display: flex; align-items: center; gap: 8px; background: #1e1e1e; border: 1px solid var(--border); border-bottom: none; padding: 6px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px; cursor: pointer; font-size: 13px; color: #888; max-width: 120px; position: relative; margin-right: 4px; }
-        .tab.active { background: var(--bg); color: #fff; font-weight: 500; border-top: 2px solid var(--accent); }
-        .tab .close-tab { font-size: 11px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-        .tab .close-tab:hover { background: #333; color: #ff5f56; }
-        .add-tab-btn { background: transparent; border: none; color: #888; font-size: 18px; cursor: pointer; padding: 0 10px; height: 28px; display: flex; align-items: center; }
-        .add-tab-btn:hover { color: #fff; }
+        .tabs-container { display: flex; height: 100%; align-items: flex-end; overflow-x: auto; scrollbar-width: none; }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tab { display: flex; align-items: center; gap: 6px; background: #151515; border-right: 1px solid var(--border); padding: 0 16px; height: 35px; cursor: pointer; font-size: 12px; color: #888; position: relative; flex-shrink: 0; }
+        .tab.active { background: var(--bg); color: #fff; font-weight: 500; }
+        .tab .close-tab { font-size: 14px; margin-left: 4px; display: inline-block; width: 12px; height: 12px; line-height: 12px; text-align: center; }
+        .tab .close-tab:hover { color: #ff5f56; }
 
-        /* Workspace Layout */
-        .workspace { display: flex; flex: 1; height: calc(100vh - 80px); }
-        .editor-box { width: 50%; height: 100%; position: relative; border-right: 1px solid var(--border); outline: none; box-sizing: border-box; }
-        .code-area { width: 100%; height: 100%; font-family: "Fira Code", Consolas, Monaco, monospace; font-size: 14px; padding: 15px; box-sizing: border-box; resize: none; border: none; background: var(--bg); color: #f8f8f2; outline: none; line-height: 1.5; }
-        .preview-box { width: 50%; height: 100%; background: #ffffff; }
+        .window-controls { display: flex; height: 100%; align-items: center; flex-shrink: 0; background: var(--panel); z-index: 101; }
+        .win-btn { background: transparent; border: none; color: #888; width: 45px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
+        .win-btn:hover { background: #252525; color: #fff; }
+        .win-btn.close:hover { background: #e81123; color: #fff; }
+
+        .workspace { display: flex; flex: 1; height: calc(100vh - 67px); position: relative; background: var(--bg); }
+        .editor-box { width: 100%; height: 100%; display: flex; position: relative; overflow: hidden; }
+        
+        .line-numbers { width: 45px; background: #151515; color: #555; text-align: right; padding: 15px 8px 15px 0; font-family: monospace; font-size: 13px; line-height: 1.5; overflow: hidden; border-right: 1px solid var(--border); }
+        .code-area { flex: 1; height: 100%; font-family: monospace; font-size: 13px; padding: 15px; box-sizing: border-box; resize: none; border: none; background: var(--bg); color: #f8f8f2; outline: none; line-height: 1.5; overflow-y: auto; user-select: text; }
+        
+        .preview-box { width: 100%; height: 100%; background: #ffffff; display: none; }
         iframe { width: 100%; height: 100%; border: none; background: white; }
 
-        /* Modal Overlay for About */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--panel); border: 1px solid var(--border); padding: 25px; border-radius: 12px; width: 320px; text-align: center; }
-        .modal h3 { margin-top: 0; color: #fff; }
-        .modal p { font-size: 14px; color: #aaa; margin: 8px 0; }
-        .close-modal { background: var(--accent); border: none; color: white; padding: 8px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px; width: 100%; }
+        .status-bar { height: 32px; background: #151515; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-size: 12px; color: #777; }
+        .status-left { display: flex; gap: 15px; }
+        .status-right { display: flex; align-items: center; gap: 15px; }
+        
+        .view-modes { display: flex; background: #202020; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+        .view-modes label { padding: 4px 12px; font-size: 11px; cursor: pointer; color: #888; transition: all 0.2s; }
+        .view-modes input { display: none; }
+        .view-modes input:checked + label { background: #333; color: #fff; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="brand">📂 ArchFlow WorkSpace</div>
-        <button class="about-btn" onclick="toggleModal(true)">About App</button>
-    </header>
-
-    <div class="tabs-container" id="tabsBar">
-        <!-- Tabs injected dynamically via JS -->
-        <button class="add-tab-btn" onclick="createNewTab()">+</button>
+    <div class="top-bar">
+        <div class="left-controls">
+            <button class="menu-btn" id="menuBtn">☰</button>
+            <div class="dropdown" id="menuDropdown">
+                <button onclick="createNewTab()">New File <span class="shortcut-hint">Ctrl+N</span></button>
+                <button onclick="openLocalFile()">Open File... <span class="shortcut-hint">Ctrl+O</span></button>
+                <button onclick="saveLocalFile()">Save File <span class="shortcut-hint">Ctrl+S</span></button>
+                <button onclick="window.closeApp()">Exit <span class="shortcut-hint">Ctrl+X</span></button>
+            </div>
+            <div class="tabs-container" id="tabsBar"></div>
+        </div>
+        <div class="window-controls">
+            <button class="win-btn" onclick="window.minimizeApp()">−</button>
+            <button class="win-btn" onclick="window.maximizeApp()">🗖</button>
+            <button class="win-btn close" onclick="window.closeApp()">×</button>
+        </div>
     </div>
 
-    <div class="workspace">
-        <div class="editor-box">
-            <textarea class="code-area" id="editor" spellcheck="false" placeholder="Write HTML/CSS/JS here..."></textarea>
+    <div class="workspace" id="workspaceContainer">
+        <div class="editor-box" id="editorPanel">
+            <div class="line-numbers" id="lineNumbers">1</div>
+            <textarea class="code-area" id="editor" spellcheck="false" placeholder="Begin drafting..."></textarea>
         </div>
-        <div class="preview-box" id="previewContainer">
+        <div class="preview-box" id="previewPanel">
             <iframe id="preview"></iframe>
         </div>
     </div>
 
-    <div class="modal" id="aboutModal">
-        <div class="modal-content">
-            <h3>ArchFlow Workspace</h3>
-            <p><strong>Version:</strong> 1.0.0 Stable</p>
-            <p><strong>Developer:</strong> Masoud Nasiri</p>
-            <p>Architectural Engine & Live System Workspace</p>
-            <button class="close-modal" onclick="toggleModal(false)">Got it</button>
+    <div class="status-bar">
+        <div class="status-left">
+            <span id="statLines">Lines: 1</span>
+            <span id="statChars">Chars: 0</span>
+        </div>
+        <div class="status-right">
+            <div class="view-modes" id="viewModesContainer" style="display: none;">
+                <input type="radio" id="modeEdit" name="viewMode" value="edit" checked>
+                <label for="modeEdit">Edit</label>
+                
+                <input type="radio" id="modePreview" name="viewMode" value="preview">
+                <label for="modePreview">Preview</label>
+            </div>
         </div>
     </div>
 
     <script>
-        // Pure Offline State Manager Engine
-        let tabs = [
-            { id: 1, name: "index.html", code: "<h1>Tab 1</h1>\n<p>Completely offline workspace.</p>\n<style>body { font-family: sans-serif; background: #fafafa; padding: 20px; }</style>" },
-            { id: 2, name: "styles.css", code: "<!-- Visual test -->\n<div class='box'>Tab 2 Canvas</div>\n<style>.box { padding: 30px; background: #007acc; color: white; font-weight: bold; border-radius: 8px; }</style>" }
-        ];
+        let tabs = [{ id: 1, name: "untitled.html", code: "", fileHandle: null }];
         let activeTabId = 1;
+
         const editor = document.getElementById('editor');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const menuBtn = document.getElementById('menuBtn');
+        const menuDropdown = document.getElementById('menuDropdown');
+        const editorPanel = document.getElementById('editorPanel');
+        const previewPanel = document.getElementById('previewPanel');
+        const viewModesContainer = document.getElementById('viewModesContainer');
+
+        function updateMenuWidth() {
+            const editorRect = editorPanel.getBoundingClientRect();
+            menuDropdown.style.width = `${editorRect.width}px`;
+        }
+
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            updateMenuWidth();
+            menuDropdown.style.display = menuDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+        document.addEventListener('click', () => menuDropdown.style.display = 'none');
+
+        function applyLayoutRatio() {
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            const isHtml = currentTab && currentTab.name.endsWith('.html');
+            
+            if (!isHtml) {
+                editorPanel.style.display = 'flex';
+                previewPanel.style.display = 'none';
+                return;
+            }
+
+            const selectedMode = document.querySelector('input[name="viewMode"]:checked').value;
+            if (selectedMode === 'preview') {
+                editorPanel.style.display = 'none';
+                previewPanel.style.display = 'block';
+                updatePreview();
+            } else {
+                editorPanel.style.display = 'flex';
+                previewPanel.style.display = 'none';
+            }
+            updateMenuWidth();
+        }
+
+        document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+            radio.addEventListener('change', applyLayoutRatio);
+        });
 
         function renderTabs() {
             const tabsBar = document.getElementById('tabsBar');
-            // Remove existing tabs but keep the add button
-            const oldTabs = tabsBar.querySelectorAll('.tab');
-            oldTabs.forEach(t => t.remove());
-
+            tabsBar.innerHTML = '';
             tabs.forEach(tab => {
                 const tabEl = document.createElement('div');
                 tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
@@ -93,66 +158,156 @@
                     <span>${tab.name}</span>
                     <span class="close-tab" onclick="closeTab(event, ${tab.id})">×</span>
                 `;
-                tabsBar.insertBefore(tabEl, tabsBar.lastElementChild);
+                tabsBar.appendChild(tabEl);
             });
         }
 
         function switchTab(id) {
-            // Save current code before switching
             const currentTab = tabs.find(t => t.id === activeTabId);
             if (currentTab) currentTab.code = editor.value;
 
             activeTabId = id;
             const nextTab = tabs.find(t => t.id === id);
             editor.value = nextTab ? nextTab.code : "";
+            
+            if (nextTab && nextTab.name.endsWith('.html')) {
+                viewModesContainer.style.display = 'flex';
+            } else {
+                viewModesContainer.style.display = 'none';
+                document.getElementById('modeEdit').checked = true;
+            }
+
             renderTabs();
-            updatePreview();
+            applyLayoutRatio();
+            updateEditorStats();
         }
 
         function createNewTab() {
             const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1;
-            tabs.push({
-                id: newId,
-                name: `untitled-${newId}.html`,
-                code: `<h1>New Canvas ${newId}</h1>`
-            });
+            tabs.push({ id: newId, name: `untitled-${newId}.html`, code: "", fileHandle: null });
             switchTab(newId);
         }
 
         function closeTab(event, id) {
-            event.stopPropagation();
-            if (tabs.length === 1) return; // Keep at least one active window
+            if (event) event.stopPropagation();
+            if (tabs.length === 1) return;
             tabs = tabs.filter(t => t.id !== id);
-            if (activeTabId === id && tabs.length > 0) {
-                activeTabId = tabs[0].id;
-            }
+            if (activeTabId === id) activeTabId = tabs[0].id;
             renderTabs();
             switchTab(activeTabId);
         }
 
+        async function openLocalFile() {
+            try {
+                const [handle] = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Supported Files',
+                        accept: { 'text/plain': ['.html', '.css', '.js', '.ts', '.py', '.pyw', '.txt'] }
+                    }]
+                });
+                const file = await handle.getFile();
+                const code = await file.text();
+                
+                const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1;
+                tabs.push({ id: newId, name: file.name, code: code, fileHandle: handle });
+                switchTab(newId);
+            } catch (err) { console.log("File open cancelled."); }
+        }
+
+        async function saveLocalFile() {
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (!currentTab) return;
+
+            try {
+                if (!currentTab.fileHandle) {
+                    currentTab.fileHandle = await window.showSaveFilePicker({
+                        suggestedName: currentTab.name,
+                        types: [
+                            { description: 'HTML Document', accept: { 'text/html': ['.html'] } },
+                            { description: 'CSS Stylesheet', accept: { 'text/css': ['.css'] } },
+                            { description: 'JavaScript Engine', accept: { 'text/javascript': ['.js'] } },
+                            { description: 'TypeScript Source', accept: { 'video/mp2t': ['.ts'] } },
+                            { description: 'Python Script', accept: { 'text/x-python': ['.py', '.pyw'] } },
+                            { description: 'Plain Text', accept: { 'text/plain': ['.txt'] } }
+                        ]
+                    });
+                }
+                const writable = await currentTab.fileHandle.createWritable();
+                await writable.write(editor.value);
+                await writable.close();
+                currentTab.name = currentTab.fileHandle.name;
+                
+                if (currentTab.name.endsWith('.html')) {
+                    viewModesContainer.style.display = 'flex';
+                } else {
+                    viewModesContainer.style.display = 'none';
+                    document.getElementById('modeEdit').checked = true;
+                }
+                renderTabs();
+                applyLayoutRatio();
+            } catch (err) { console.log("File save cancelled."); }
+        }
+
+        function updateEditorStats() {
+            const text = editor.value;
+            const lines = text.split('\n');
+            
+            let numHtml = '';
+            for (let i = 1; i <= lines.length; i++) { numHtml += i + '<br>'; }
+            lineNumbers.innerHTML = numHtml;
+
+            document.getElementById('statLines').innerText = `Lines: ${lines.length}`;
+            document.getElementById('statChars').innerText = `Chars: ${text.length}`;
+        }
+
         function updatePreview() {
-            const iframe = document.getElementById('preview');
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            doc.write(editor.value);
-            doc.close();
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (currentTab && currentTab.name.endsWith('.html')) {
+                const iframe = document.getElementById('preview');
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(editor.value);
+                doc.close();
+            }
         }
 
-        function toggleModal(show) {
-            document.getElementById('aboutModal').style.display = show ? 'flex' : 'none';
-        }
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                const key = e.key.toLowerCase();
+                if (key === 's') {
+                    e.preventDefault();
+                    saveLocalFile();
+                } else if (key === 'o') {
+                    e.preventDefault();
+                    openLocalFile();
+                } else if (key === 'n') {
+                    e.preventDefault();
+                    createNewTab();
+                } else if (key === 'w') {
+                    e.preventDefault();
+                    closeTab(null, activeTabId);
+                } else if (key === 'x' && editor !== document.activeElement) {
+                    e.preventDefault();
+                    window.closeApp();
+                }
+            }
+        });
 
-        // Live Event Listeners
         editor.addEventListener('input', () => {
             const currentTab = tabs.find(t => t.id === activeTabId);
             if (currentTab) currentTab.code = editor.value;
-            updatePreview();
+            updateEditorStats();
         });
 
-        // Initialize Workspace System
-        editor.value = tabs[0].code;
+        editor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = editor.scrollTop;
+        });
+
+        window.addEventListener('resize', updateMenuWidth);
+
         renderTabs();
-        updatePreview();
+        updateEditorStats();
+        applyLayoutRatio();
     </script>
 </body>
 </html>
