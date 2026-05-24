@@ -1,8 +1,9 @@
+# Cargo.toml
 [package]
 name = "mini_html_editor"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Locking the exact compatible version to match the code layout
-wry = "=0.35.0"
+wry = "0.35"
+tao = "0.25"
