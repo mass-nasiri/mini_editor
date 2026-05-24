@@ -17,12 +17,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_inner_size(tao::dpi::LogicalSize::new(1200.0, 800.0))
         .build(&event_loop)?;
 
-    // Build the webview using the tao window instance and load the embedded live editor
+    // Safely wrap the window inside the WebViewBuilder setup
     let _webview = WebViewBuilder::new(&window)
         .with_html(html_content)?
         .build()?;
 
-    // Correctly return the event loop execution to satisfy the Result logic
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
