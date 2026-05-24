@@ -4,74 +4,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal Go HTML Editor</title>
-    <!-- Lightweight Monaco Editor CDN -->
-    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/editor/editor.main.min.css">
+    <title>Sleek Offline Editor</title>
     <style>
-        body { margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background-color: #1e1e1e; font-family: sans-serif; }
-        #editor-container { width: 50%; height: 100%; }
-        #preview-container { width: 50%; height: 100%; background: #ffffff; border-left: 2px solid #333; }
-        iframe { width: 100%; height: 100%; border: none; }
+        :root { --bg: #121212; --panel: #1a1a1a; --text: #e0e0e0; --accent: #007acc; --border: #2d2d2d; }
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+        
+        /* Top Navigation Header */
+        header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border-bottom: 1px solid var(--border); padding: 0 15px; height: 45px; }
+        .brand { font-weight: 600; font-size: 14px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        .about-btn { background: transparent; border: 1px solid var(--border); color: #888; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .about-btn:hover { color: #fff; border-color: #555; }
+
+        /* Tabs Bar */
+        .tabs-container { display: flex; background: #151515; border-bottom: 1px solid var(--border); height: 35px; align-items: flex-end; padding-left: 10px; }
+        .tab { display: flex; align-items: center; gap: 8px; background: #1e1e1e; border: 1px solid var(--border); border-bottom: none; padding: 6px 16px; border-top-left-radius: 6px; border-top-right-radius: 6px; cursor: pointer; font-size: 13px; color: #888; max-width: 120px; position: relative; margin-right: 4px; }
+        .tab.active { background: var(--bg); color: #fff; font-weight: 500; border-top: 2px solid var(--accent); }
+        .tab .close-tab { font-size: 11px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .tab .close-tab:hover { background: #333; color: #ff5f56; }
+        .add-tab-btn { background: transparent; border: none; color: #888; font-size: 18px; cursor: pointer; padding: 0 10px; height: 28px; display: flex; align-items: center; }
+        .add-tab-btn:hover { color: #fff; }
+
+        /* Workspace Layout */
+        .workspace { display: flex; flex: 1; height: calc(100vh - 80px); }
+        .editor-box { width: 50%; height: 100%; position: relative; border-right: 1px solid var(--border); outline: none; box-sizing: border-box; }
+        .code-area { width: 100%; height: 100%; font-family: "Fira Code", Consolas, Monaco, monospace; font-size: 14px; padding: 15px; box-sizing: border-box; resize: none; border: none; background: var(--bg); color: #f8f8f2; outline: none; line-height: 1.5; }
+        .preview-box { width: 50%; height: 100%; background: #ffffff; }
+        iframe { width: 100%; height: 100%; border: none; background: white; }
+
+        /* Modal Overlay for About */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--panel); border: 1px solid var(--border); padding: 25px; border-radius: 12px; width: 320px; text-align: center; }
+        .modal h3 { margin-top: 0; color: #fff; }
+        .modal p { font-size: 14px; color: #aaa; margin: 8px 0; }
+        .close-modal { background: var(--accent); border: none; color: white; padding: 8px 20px; border-radius: 6px; cursor: pointer; margin-top: 15px; width: 100%; }
     </style>
 </head>
 <body>
 
-    <div id="editor-container"></div>
-    <div id="preview-container"></div>
+    <header>
+        <div class="brand">📂 ArchFlow WorkSpace</div>
+        <button class="about-btn" onclick="toggleModal(true)">About App</button>
+    </header>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <div class="tabs-container" id="tabsBar">
+        <!-- Tabs injected dynamically via JS -->
+        <button class="add-tab-btn" onclick="createNewTab()">+</button>
+    </div>
+
+    <div class="workspace">
+        <div class="editor-box">
+            <textarea class="code-area" id="editor" spellcheck="false" placeholder="Write HTML/CSS/JS here..."></textarea>
+        </div>
+        <div class="preview-box" id="previewContainer">
+            <iframe id="preview"></iframe>
+        </div>
+    </div>
+
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <h3>ArchFlow Workspace</h3>
+            <p><strong>Version:</strong> 1.0.0 Stable</p>
+            <p><strong>Developer:</strong> Masoud Nasiri</p>
+            <p>Architectural Engine & Live System Workspace</p>
+            <button class="close-modal" onclick="toggleModal(false)">Got it</button>
+        </div>
+    </div>
+
     <script>
-        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
+        // Pure Offline State Manager Engine
+        let tabs = [
+            { id: 1, name: "index.html", code: "<h1>Tab 1</h1>\n<p>Completely offline workspace.</p>\n<style>body { font-family: sans-serif; background: #fafafa; padding: 20px; }</style>" },
+            { id: 2, name: "styles.css", code: "<!-- Visual test -->\n<div class='box'>Tab 2 Canvas</div>\n<style>.box { padding: 30px; background: #007acc; color: white; font-weight: bold; border-radius: 8px; }</style>" }
+        ];
+        let activeTabId = 1;
+        const editor = document.getElementById('editor');
 
-        require(['vs/editor/editor.main'], function() {
-            const initialCode = `<!-- HTML -->
-<div class="card">
-    <h1>Hello From Go!</h1>
-    <p id="msg">Sleek, lightweight, and fast real-time preview.</p>
-</div>
+        function renderTabs() {
+            const tabsBar = document.getElementById('tabsBar');
+            // Remove existing tabs but keep the add button
+            const oldTabs = tabsBar.querySelectorAll('.tab');
+            oldTabs.forEach(t => t.remove());
 
-<style>
-    /* CSS */
-    body { font-family: 'Segoe UI', system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #eef2f3; }
-    .card { text-align: center; padding: 40px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-    h1 { color: #007acc; font-weight: 600; }
-</style>
-
-<script>
-    // JavaScript
-    document.getElementById('msg').innerText += " Built dynamically.";
-<\/script>`;
-
-            window.editor = monaco.editor.create(document.getElementById('editor-container'), {
-                value: initialCode,
-                language: 'html',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                minimap: { enabled: false },
-                fontSize: 14
+            tabs.forEach(tab => {
+                const tabEl = document.createElement('div');
+                tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
+                tabEl.onclick = () => switchTab(tab.id);
+                tabEl.innerHTML = `
+                    <span>${tab.name}</span>
+                    <span class="close-tab" onclick="closeTab(event, ${tab.id})">×</span>
+                `;
+                tabsBar.insertBefore(tabEl, tabsBar.lastElementChild);
             });
+        }
 
-            function updatePreview() {
-                const code = window.editor.getValue();
-                const container = document.getElementById('preview-container');
-                
-                // Completely recreate the iframe to force correct memory and script execution
-                container.innerHTML = '';
-                const iframe = document.createElement('iframe');
-                container.appendChild(iframe);
-                
-                const doc = iframe.contentWindow.document;
-                doc.open();
-                doc.write(code);
-                doc.close();
+        function switchTab(id) {
+            // Save current code before switching
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (currentTab) currentTab.code = editor.value;
+
+            activeTabId = id;
+            const nextTab = tabs.find(t => t.id === id);
+            editor.value = nextTab ? nextTab.code : "";
+            renderTabs();
+            updatePreview();
+        }
+
+        function createNewTab() {
+            const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1;
+            tabs.push({
+                id: newId,
+                name: `untitled-${newId}.html`,
+                code: `<h1>New Canvas ${newId}</h1>`
+            });
+            switchTab(newId);
+        }
+
+        function closeTab(event, id) {
+            event.stopPropagation();
+            if (tabs.length === 1) return; // Keep at least one active window
+            tabs = tabs.filter(t => t.id !== id);
+            if (activeTabId === id && tabs.length > 0) {
+                activeTabId = tabs[0].id;
             }
+            renderTabs();
+            switchTab(activeTabId);
+        }
 
-            window.editor.onDidChangeModelContent(() => {
-                updatePreview();
-            });
+        function updatePreview() {
+            const iframe = document.getElementById('preview');
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(editor.value);
+            doc.close();
+        }
 
+        function toggleModal(show) {
+            document.getElementById('aboutModal').style.display = show ? 'flex' : 'none';
+        }
+
+        // Live Event Listeners
+        editor.addEventListener('input', () => {
+            const currentTab = tabs.find(t => t.id === activeTabId);
+            if (currentTab) currentTab.code = editor.value;
             updatePreview();
         });
+
+        // Initialize Workspace System
+        editor.value = tabs[0].code;
+        renderTabs();
+        updatePreview();
     </script>
 </body>
 </html>
