@@ -34,5 +34,6 @@
             "LangID": "0409",
             "CharsetID": "04b0"
         }
-    }
+    },
+    "Icon": "app.ico"
 }
