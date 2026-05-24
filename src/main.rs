@@ -35,5 +35,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } => *control_flow = ControlFlow::Exit,
             _ => (),
         }
-    });
+    }); // Crucial: Removed the trailing semicolon or matched the block returns correctly
 }
