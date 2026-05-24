@@ -98,7 +98,7 @@
     </div>
 
     <script>
-        let tabs = [{ id: 1, name: "untitled.html", code: "", fileHandle: null }];
+        let tabs = [{ id: 1, name: "untitled.html", code: "", path: "" }];
         let activeTabId = 1;
 
         const editor = document.getElementById('editor');
@@ -184,7 +184,7 @@
 
         function createNewTab() {
             const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1;
-            tabs.push({ id: newId, name: `untitled-${newId}.html`, code: "", fileHandle: null });
+            tabs.push({ id: newId, name: `untitled-${newId}.html`, code: "", path: "" });
             switchTab(newId);
         }
 
@@ -197,55 +197,42 @@
             switchTab(activeTabId);
         }
 
+        // Bridge function connecting to native Go file prompt dialog
         async function openLocalFile() {
-            try {
-                const [handle] = await window.showOpenFilePicker({
-                    types: [{
-                        description: 'Supported Files',
-                        accept: { 'text/plain': ['.html', '.css', '.js', '.ts', '.py', '.pyw', '.txt'] }
-                    }]
+            if (window.nativeOpenDialog) {
+                window.nativeOpenDialog().then(resultJson => {
+                    if (!resultJson) return;
+                    const res = JSON.parse(resultJson);
+                    if (!res.Path) return;
+
+                    const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1;
+                    tabs.push({ id: newId, name: res.Name, code: res.Content, path: res.Path });
+                    switchTab(newId);
                 });
-                const file = await handle.getFile();
-                const code = await file.text();
-                
-                const newId = tabs.length > 0 ? Math.max(...tabs.map(t => t.id)) + 1 : 1;
-                tabs.push({ id: newId, name: file.name, code: code, fileHandle: handle });
-                switchTab(newId);
-            } catch (err) { console.log("File open cancelled."); }
+            }
         }
 
+        // Bridge function connecting to native Go save system
         async function saveLocalFile() {
             const currentTab = tabs.find(t => t.id === activeTabId);
             if (!currentTab) return;
 
-            try {
-                if (!currentTab.fileHandle) {
-                    currentTab.fileHandle = await window.showSaveFilePicker({
-                        suggestedName: currentTab.name,
-                        types: [
-                            { description: 'HTML Document', accept: { 'text/html': ['.html'] } },
-                            { description: 'CSS Stylesheet', accept: { 'text/css': ['.css'] } },
-                            { description: 'JavaScript Engine', accept: { 'text/javascript': ['.js'] } },
-                            { description: 'TypeScript Source', accept: { 'video/mp2t': ['.ts'] } },
-                            { description: 'Python Script', accept: { 'text/x-python': ['.py', '.pyw'] } },
-                            { description: 'Plain Text', accept: { 'text/plain': ['.txt'] } }
-                        ]
-                    });
-                }
-                const writable = await currentTab.fileHandle.createWritable();
-                await writable.write(editor.value);
-                await writable.close();
-                currentTab.name = currentTab.fileHandle.name;
-                
-                if (currentTab.name.endsWith('.html')) {
-                    viewModesContainer.style.display = 'flex';
-                } else {
-                    viewModesContainer.style.display = 'none';
-                    document.getElementById('modeEdit').checked = true;
-                }
-                renderTabs();
-                applyLayoutRatio();
-            } catch (err) { console.log("File save cancelled."); }
+            if (window.nativeSaveDialog) {
+                window.nativeSaveDialog(currentTab.path, currentTab.name, editor.value).then(updatedPath => {
+                    if (!updatedPath) return;
+                    currentTab.path = updatedPath;
+                    currentTab.name = updatedPath.split('\\').pop().split('/').pop();
+                    
+                    if (currentTab.name.endsWith('.html')) {
+                        viewModesContainer.style.display = 'flex';
+                    } else {
+                        viewModesContainer.style.display = 'none';
+                        document.getElementById('modeEdit').checked = true;
+                    }
+                    renderTabs();
+                    applyLayoutRatio();
+                });
+            }
         }
 
         function updateEditorStats() {
